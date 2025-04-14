@@ -30,7 +30,7 @@ public class UrlController : ControllerBase
         return await CreateUrlEntry(originalUrl, shortCode, false);
     }
 
-    // NEW: Custom URL endpoint
+    // Custom URL endpoint
     [HttpPost("custom")]
     public async Task<ActionResult<UrlResponse>> CreateCustomUrl([FromBody] CustomUrlRequest request)
     {
