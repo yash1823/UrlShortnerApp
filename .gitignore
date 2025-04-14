@@ -361,3 +361,21 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Frontend-specific ignores (add these at the end)
+/client/node_modules/
+/client/dist/
+/client/.env
+/client/.env.local
+/client/.env.development
+/client/.env.test
+/client/.env.production
+/client/.vscode/
+/client/.DS_Store
+/client/coverage/
+/client/.parcel-cache/
+/client/.cache/
+/client/build/
+/client/.eslintcache
+/client/package-lock.json
+/client/yarn.lock
