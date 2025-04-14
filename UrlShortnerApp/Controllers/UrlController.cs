@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using UrlShortener.Data;
 using UrlShortener.Models;
+using UrlShortnerApp.Models;
 
 namespace UrlShortener.Controllers;
 
@@ -18,27 +19,64 @@ public class UrlController : ControllerBase
         _logger = logger;
     }
 
+    // Existing auto-shorten endpoint
     [HttpPost("shorten")]
-    public async Task<IActionResult> ShortenUrl([FromBody] string originalUrl)
+    public async Task<ActionResult<UrlResponse>> ShortenUrl([FromBody] string originalUrl)
     {
         if (!Uri.TryCreate(originalUrl, UriKind.Absolute, out _))
             return BadRequest("Invalid URL format");
 
         var shortCode = GenerateShortCode();
-        var domain = $"{Request.Scheme}://{Request.Host}";
+        return await CreateUrlEntry(originalUrl, shortCode, false);
+    }
 
+    // NEW: Custom URL endpoint
+    [HttpPost("custom")]
+    public async Task<ActionResult<UrlResponse>> CreateCustomUrl([FromBody] CustomUrlRequest request)
+    {
+        // Validate URL
+        if (!Uri.TryCreate(request.OriginalUrl, UriKind.Absolute, out _))
+            return BadRequest("Invalid URL format");
+
+        // Validate custom code (alphanumeric, 3-20 chars)
+        if (string.IsNullOrWhiteSpace(request.CustomCode) ||
+            !System.Text.RegularExpressions.Regex.IsMatch(request.CustomCode, "^[a-zA-Z0-9]{3,20}$"))
+        {
+            return BadRequest("Custom code must be 3-20 alphanumeric characters");
+        }
+
+        // Check if custom code exists
+        if (await _db.Urls.AnyAsync(u => u.ShortCode == request.CustomCode))
+        {
+            return Conflict("Custom code already in use");
+        }
+
+        return await CreateUrlEntry(request.OriginalUrl, request.CustomCode, true);
+    }
+
+    // Shared creation logic
+    private async Task<ActionResult<UrlResponse>> CreateUrlEntry(string originalUrl, string shortCode, bool isCustom)
+    {
         var url = new Url
         {
             ShortCode = shortCode,
-            OriginalUrl = originalUrl
+            OriginalUrl = originalUrl,
+            IsCustom = isCustom
         };
 
         _db.Urls.Add(url);
         await _db.SaveChangesAsync();
 
-        return Ok(new { shortUrl = $"{domain}/{shortCode}" });
+        var domain = $"{Request.Scheme}://{Request.Host}";
+        return Ok(new UrlResponse
+        {
+            ShortUrl = $"{domain}/{shortCode}",
+            OriginalUrl = originalUrl,
+            IsCustom = isCustom
+        });
     }
 
+    // Existing redirect endpoint
     [HttpGet("{shortCode}")]
     public async Task<IActionResult> RedirectUrl(string shortCode)
     {

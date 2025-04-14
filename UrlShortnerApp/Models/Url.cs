@@ -15,4 +15,5 @@ public class Url
     public string OriginalUrl { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsCustom { get; set; }  
 }
