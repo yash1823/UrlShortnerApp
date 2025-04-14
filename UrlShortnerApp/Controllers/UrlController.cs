@@ -7,7 +7,7 @@ using UrlShortnerApp.Models;
 namespace UrlShortener.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/url")] 
 public class UrlController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -76,8 +76,8 @@ public class UrlController : ControllerBase
         });
     }
 
-    // Existing redirect endpoint
-    [HttpGet("{shortCode}")]
+    // Redirect endpoint
+    [HttpGet("{shortCode:regex(^[[a-zA-Z0-9]]{{3,20}}$)}", Order = 1)]
     public async Task<IActionResult> RedirectUrl(string shortCode)
     {
         var url = await _db.Urls.FirstOrDefaultAsync(u => u.ShortCode == shortCode);

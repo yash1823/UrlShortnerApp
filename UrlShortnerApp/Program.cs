@@ -20,6 +20,15 @@ builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrateg
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 var app = builder.Build();
 
@@ -37,8 +46,19 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors("AllowAll");
 app.UseIpRateLimiting(); 
 app.UseHttpsRedirection();
+app.MapGet("/{shortCode}", async (string shortCode, AppDbContext db) =>
+{
+    var url = await db.Urls
+        .AsNoTracking()
+        .FirstOrDefaultAsync(u => u.ShortCode == shortCode);
+
+    return url is null
+        ? Results.NotFound()
+        : Results.Redirect(url.OriginalUrl);
+});
 app.MapControllers();
 
 app.Run();
