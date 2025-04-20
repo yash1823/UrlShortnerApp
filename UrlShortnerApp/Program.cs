@@ -1,6 +1,7 @@
 using AspNetCoreRateLimit;
 using Microsoft.EntityFrameworkCore;
 using UrlShortener.Data;
+using UrlShortnerApp.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +50,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowAll");
 app.UseIpRateLimiting(); 
 app.UseHttpsRedirection();
+app.UseMiddleware<GlobalExceptionHandler>();
 app.MapGet("/{shortCode}", async (string shortCode, AppDbContext db) =>
 {
     var url = await db.Urls
