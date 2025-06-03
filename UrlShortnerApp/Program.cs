@@ -6,14 +6,27 @@ using UrlShortnerApp.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ===== ENVIRONMENT VARIABLE FALLBACK FOR DB CONNECTION =====
+var dbConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+if (string.IsNullOrWhiteSpace(dbConnectionString))
+    throw new InvalidOperationException("Database connection string not found. Set 'DB_CONNECTION_STRING' env variable or provide in appsettings.");
+
 // ===== DATABASE SETUP =====
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(dbConnectionString));
+
+// ===== URL BASE (OPTIONAL) =====
+var urlOptionsSection = builder.Configuration.GetSection("UrlOptions");
+var baseUrlFromEnv = Environment.GetEnvironmentVariable("BASE_URL");
+if (!string.IsNullOrEmpty(baseUrlFromEnv))
+    urlOptionsSection["BaseUrl"] = baseUrlFromEnv; // override if env var is set
+
+builder.Services.Configure<UrlOptions>(urlOptionsSection);
 
 // ===== IN-MEMORY RATE LIMITING =====
 builder.Services.AddMemoryCache();
-var check = builder.Configuration.GetSection("UrlOptions") ?? throw new MissingFieldException("UrlOptions section is missing in configuration.");
-builder.Services.Configure<UrlOptions>(check);
 builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
 builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
 builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
@@ -51,7 +64,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAll");
-app.UseIpRateLimiting(); 
+app.UseIpRateLimiting();
 app.UseHttpsRedirection();
 app.UseMiddleware<GlobalExceptionHandler>();
 app.MapGet("/{shortCode}", async (string shortCode, AppDbContext db) =>
