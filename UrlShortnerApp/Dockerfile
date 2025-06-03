@@ -1,22 +1,20 @@
-# UrlShortnerApp/Dockerfile
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
-# Copy csproj and restore as distinct layers
+# Copy solution and project files for restore (cache efficiency)
 COPY *.sln .
-COPY UrlShortnerApp/*.csproj ./UrlShortnerApp/
+COPY *.csproj ./
 RUN dotnet restore
 
-# Copy everything else and build
-COPY UrlShortnerApp/. ./UrlShortnerApp/
-WORKDIR /app/UrlShortnerApp
+# Copy the rest of your code and build
+COPY . ./
 RUN dotnet publish -c Release -o out
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=build /app/UrlShortnerApp/out ./
+COPY --from=build /app/out ./
 
 # Expose port 8080 for Render
 ENV ASPNETCORE_URLS=http://+:8080
