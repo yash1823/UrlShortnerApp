@@ -32,7 +32,7 @@ export default function UrlShortenerForm() {
     success: false
   });
 
-  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:44386';
+  const API_BASE = import.meta.env.VITE_API_BASE;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
