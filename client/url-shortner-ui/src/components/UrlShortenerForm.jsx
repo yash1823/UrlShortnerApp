@@ -55,10 +55,17 @@ export default function UrlShortenerForm() {
         success: true
       });
     } catch (err) {
+      // Try to extract custom API error message and suggestion
+      const apiMsg = err.response?.data?.message;
+      const apiSuggestion = err.response?.data?.suggestion;
       setResult({
         ...result,
         loading: false,
-        error: err.response?.data?.Message || err.message,
+        error: apiMsg
+          ? apiSuggestion
+            ? `${apiMsg}. ${apiSuggestion}`
+            : apiMsg
+          : err.response?.data?.Message || err.message,
         success: false
       });
     }
