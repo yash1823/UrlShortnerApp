@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using UrlShortener.Data;
 using UrlShortener.Models;
 using UrlShortnerApp.Models;
@@ -10,11 +11,13 @@ public class UrlController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly ILogger<UrlController> _logger;
+    private readonly IOptions<UrlOptions> _urlOptions;
 
-    public UrlController(AppDbContext db, ILogger<UrlController> logger)
+    public UrlController(AppDbContext db, ILogger<UrlController> logger, IOptions<UrlOptions> urlOptions)
     {
         _db = db;
         _logger = logger;
+        _urlOptions = urlOptions;
     }
 
     [HttpPost("shorten")]
@@ -85,7 +88,7 @@ public class UrlController : ControllerBase
             _db.Urls.Add(url);
             await _db.SaveChangesAsync();
 
-            var domain = $"{Request.Scheme}://{Request.Host}";
+            var domain = _urlOptions.Value.BaseUrl?.TrimEnd('/') ?? throw new InvalidOperationException("BaseUrl is not configured.");
             return Ok(new UrlResponse
             {
                 ShortUrl = $"{domain}/{shortCode}",

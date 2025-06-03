@@ -2,6 +2,7 @@ using AspNetCoreRateLimit;
 using Microsoft.EntityFrameworkCore;
 using UrlShortener.Data;
 using UrlShortnerApp.Middleware;
+using UrlShortnerApp.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // ===== IN-MEMORY RATE LIMITING =====
 builder.Services.AddMemoryCache();
+var check = builder.Configuration.GetSection("UrlOptions") ?? throw new MissingFieldException("UrlOptions section is missing in configuration.");
+builder.Services.Configure<UrlOptions>(check);
 builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
 builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
 builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
